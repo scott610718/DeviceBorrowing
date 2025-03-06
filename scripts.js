@@ -1,7 +1,7 @@
 // GitHub倉庫配置
 const GITHUB_CONFIG = {
-  owner: 'YOUR_GITHUB_USERNAME',  // 替換為您的GitHub用戶名
-  repo: 'YOUR_REPO_NAME',         // 替換為您的倉庫名
+  owner: 'scott610718',  // 替換為您的GitHub用戶名
+  repo: 'DeviceBorrowing',         // 替換為您的倉庫名
   branch: 'main',                 // 主分支名稱
   ipadPath: 'data/ipad.json',     // iPad教室數據路徑
   chromebookPath: 'data/chromebook.json' // Chromebook教室數據路徑
