@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>營北國中載具借用系統</title>
+    <style>
+        :root {
+            --primary: #1e88e5;
+            --primary-dark: #1565c0;
+            --primary-light: #64b5f6;
+            --secondary: #bbdefb;
+            --text: #212121;
+            --text-light: #757575;
+            --background: #f5f5f5;
+            --white: #ffffff;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Microsoft JhengHei', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--background);
+            color: var(--text);
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        header {
+            background-color: var(--primary);
+            color: var(--white);
+            padding: 1rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 1.8rem;
+            text-align: center;
+        }
+        
+        .admin-login {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: var(--white);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .admin-login:hover {
+            text-decoration: underline;
+        }
+        
+        .admin-status {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            color: var(--white);
+            display: none;
+        }
+        
+        .logout-btn {
+            margin-left: 0.5rem;
+            background-color: var(--white);
+            color: var(--primary);
+            border: none;
+            padding: 0.2rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        
+        .room-selector, .week-selector {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        select, button, input {
+            padding: 0.5rem;
+            border: 1px solid var(--primary);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        button {
+            background-color: var(--primary);
+            color: var(--white);
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .file-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .week-nav {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .schedule-container {
+            overflow-x: auto;
+            margin-bottom: 2rem;
+            background-color: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            padding: 1rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: center;
+            border: 1px solid var(--secondary);
+        }
+        
+        th {
+            background-color: var(--primary);
+            color: var(--white);
+            position: sticky;
+            top: 0;
+        }
+        
+        tr:nth-child(even) {
+            background-color: var(--secondary);
+        }
+        
+        .period-label {
+            background-color: var(--primary-light);
+            color: var(--white);
+            font-weight: bold;
+        }
+        
+        .unavailable {
+            background-color: var(--warning);
+            color: var(--white);
+        }
+        
+        .always-unavailable {
+            background-color: var(--danger);
+            color: var(--white);
+        }
+        
+        .cell-select {
+            width: 100%;
+            padding: 0.3rem;
+        }
+        
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: var(--white);
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+        
+        .modal-title {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-group input {
+            width: 100%;
+        }
+        
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+        }
+        
+        .close-btn {
+            background-color: var(--text-light);
+        }
+        
+        /* Responsive adjustments */
+        @media screen and (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .room-selector, .week-selector, .file-actions, .week-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            th, td {
+                padding: 0.5rem 0.25rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        @media screen and (max-width: 480px) {
+            table {
+                font-size: 0.8rem;
+            }
+            
+            .cell-select {
+                font-size: 0.8rem;
+                padding: 0.1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>營北國中載具借用系統</h1>
+        <a href="#" class="admin-login" id="adminLoginLink">管理者登入</a>
+        <div class="admin-status" id="adminStatus">
+            管理者已登入 <button class="logout-btn" id="logoutBtn">登出</button>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="room-selector">
+                <label for="roomSelect">選擇教室:</label>
+                <select id="roomSelect">
+                    <option value="ipad">iPad 教室</option>
+                    <option value="chromebook">Chromebook 教室</option>
+                </select>
+            </div>
+            
+            <div class="week-selector">
+                <label for="weekSelect">選擇週次:</label>
+                <select id="weekSelect"></select>
+            </div>
+            
+            <div class="week-nav">
+                <button id="prevWeekBtn">上一週</button>
+                <button id="nextWeekBtn">下一週</button>
+                <button id="currentWeekBtn">本週</button>
+            </div>
+            
+            <div class="file-actions">
+                <button id="exportBtn">輸出檔案</button>
+                <input type="file" id="importFile" accept=".json" style="display: none;">
+                <button id="importBtn">匯入檔案</button>
+            </div>
+        </div>
+        
+        <div class="schedule-container">
+            <table id="scheduleTable">
+                <thead>
+                    <tr id="headerRow">
+                        <th>節次\星期</th>
+                    </tr>
+                </thead>
+                <tbody id="scheduleBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Admin Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">管理者登入</h3>
+            <div class="form-group">
+                <label for="username">帳號:</label>
+                <input type="text" id="username">
+            </div>
+            <div class="form-group">
+                <label for="password">密碼:</label>
+                <input type="password" id="password">
+            </div>
+            <div class="modal-actions">
+                <button class="close-btn" id="cancelLoginBtn">取消</button>
+                <button id="loginBtn">登入</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Constants
+        const DAYS_OF_WEEK = ['一', '二', '三', '四', '五', '六'];
+        const PERIODS = 8;
+        const USERS = ['王老師', '李老師', '張老師', '陳老師', '林老師'];
+        const ADMIN_USER = '114';
+        const ADMIN_PASS = '114';
+        
+        // State variables
+        let isAdmin = false;
+        let currentRoom = 'ipad';
+        let currentWeek = 1;
+        let scheduleData = {
+            ipad: [],
+            chromebook: []
+        };
+        
+        // Utility functions for date handling
+        function getWeekDates(year, weekNum) {
+            // Assuming first week of the year starts on January 1
+            const jan1 = new Date(year, 0, 1);
+            const daysOffset = jan1.getDay() === 0 ? 6 : jan1.getDay() - 1; // Adjust to start from Monday
+            
+            const firstMonday = new Date(year, 0, 1 + (daysOffset > 0 ? 7 - daysOffset : 0));
+            const startDate = new Date(firstMonday);
+            startDate.setDate(firstMonday.getDate() + (weekNum - 1) * 7);
+            
+            const dates = [];
+            for (let i = 0; i < 6; i++) { // Monday to Saturday
+                const date = new Date(startDate);
+                date.setDate(startDate.getDate() + i);
+                dates.push(date);
+            }
+            
+            return dates;
+        }
+        
+        function formatDateHeader(date) {
+            const month = date.getMonth() + 1;
+            const day = date.getDate();
+            return `${DAYS_OF_WEEK[date.getDay() === 0 ? 6 : date.getDay() - 1]}(${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')})`;
+        }
+        
+        function getCurrentWeek() {
+            const now = new Date();
+            const year = now.getFullYear();
+            const jan1 = new Date(year, 0, 1);
+            const dayOfWeek = jan1.getDay() === 0 ? 7 : jan1.getDay();
+            const firstMonday = new Date(year, 0, 1 + (dayOfWeek > 1 ? 9 - dayOfWeek : 1));
+            
+            const diff = now - firstMonday;
+            const oneWeek = 7 * 24 * 60 * 60 * 1000;
+            const weekNumber = Math.floor(diff / oneWeek) + 1;
+            
+            return Math.min(Math.max(weekNumber, 1), 52);
+        }
+        
+        // Initialize the application
+        function initApp() {
+            initWeekSelector();
+            initDefaultData();
+            attachEventListeners();
+            currentWeek = getCurrentWeek();
+            document.getElementById('weekSelect').value = currentWeek;
+            renderSchedule();
+        }
+        
+        function initWeekSelector() {
+            const weekSelect = document.getElementById('weekSelect');
+            for (let i = 1; i <= 52; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `第 ${i} 週`;
+                weekSelect.appendChild(option);
+            }
+        }
+        
+        function initDefaultData() {
+            // Initialize empty schedule for both rooms
+            for (let room of ['ipad', 'chromebook']) {
+                const roomData = [];
+                
+                // For each week (1-52)
+                for (let week = 1; week <= 52; week++) {
+                    const weekData = [];
+                    
+                    // For each period (1-8)
+                    for (let period = 1; period <= PERIODS; period++) {
+                        const dayData = [];
+                        
+                        // For each day (1-6, Monday to Saturday)
+                        for (let day = 0; day < 6; day++) {
+                            dayData.push(''); // Empty means available
+                        }
+                        
+                        weekData.push(dayData);
+                    }
+                    
+                    roomData.push(weekData);
+                }
+                
+                scheduleData[room] = roomData;
+            }
+            
+            // Save to localStorage if available
+            try {
+                const savedData = localStorage.getItem('scheduleData');
+                if (savedData) {
+                    scheduleData = JSON.parse(savedData);
+                } else {
+                    localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+                }
+            } catch (e) {
+                console.error('LocalStorage error:', e);
+            }
+        }
+        
+        function attachEventListeners() {
+            // Room and week selection
+            document.getElementById('roomSelect').addEventListener('change', function() {
+                currentRoom = this.value;
+                renderSchedule();
+            });
+            
+            document.getElementById('weekSelect').addEventListener('change', function() {
+                currentWeek = parseInt(this.value);
+                renderSchedule();
+            });
+            
+            // Week navigation
+            document.getElementById('prevWeekBtn').addEventListener('click', function() {
+                if (currentWeek > 1) {
+                    currentWeek--;
+                    document.getElementById('weekSelect').value = currentWeek;
+                    renderSchedule();
+                }
+            });
+            
+            document.getElementById('nextWeekBtn').addEventListener('click', function() {
+                if (currentWeek < 52) {
+                    currentWeek++;
+                    document.getElementById('weekSelect').value = currentWeek;
+                    renderSchedule();
+                }
+            });
+            
+            document.getElementById('currentWeekBtn').addEventListener('click', function() {
+                currentWeek = getCurrentWeek();
+                document.getElementById('weekSelect').value = currentWeek;
+                renderSchedule();
+            });
+            
+            // Admin login
+            document.getElementById('adminLoginLink').addEventListener('click', function(e) {
+                e.preventDefault();
+                document.getElementById('loginModal').style.display = 'block';
+            });
+            
+            document.getElementById('cancelLoginBtn').addEventListener('click', function() {
+                document.getElementById('loginModal').style.display = 'none';
+            });
+            
+            document.getElementById('loginBtn').addEventListener('click', function() {
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                if (username === ADMIN_USER && password === ADMIN_PASS) {
+                    isAdmin = true;
+                    document.getElementById('loginModal').style.display = 'none';
+                    document.getElementById('adminLoginLink').style.display = 'none';
+                    document.getElementById('adminStatus').style.display = 'block';
+                    renderSchedule(); // Re-render with admin privileges
+                } else {
+                    alert('帳號或密碼錯誤');
+                }
+            });
+            
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                isAdmin = false;
+                document.getElementById('adminLoginLink').style.display = 'block';
+                document.getElementById('adminStatus').style.display = 'none';
+                renderSchedule(); // Re-render without admin privileges
+            });
+            
+            // Import/Export
+            document.getElementById('exportBtn').addEventListener('click', exportData);
+            document.getElementById('importBtn').addEventListener('click', function() {
+                document.getElementById('importFile').click();
+            });
+            
+            document.getElementById('importFile').addEventListener('change', importData);
+        }
+        
+        function renderSchedule() {
+            const headerRow = document.getElementById('headerRow');
+            const scheduleBody = document.getElementById('scheduleBody');
+            
+            // Clear previous content
+            while (headerRow.childElementCount > 1) {
+                headerRow.removeChild(headerRow.lastChild);
+            }
+            scheduleBody.innerHTML = '';
+            
+            // Add date headers
+            const weekDates = getWeekDates(2025, currentWeek);
+            for (let i = 0; i < 6; i++) {
+                const th = document.createElement('th');
+                th.textContent = formatDateHeader(weekDates[i]);
+                headerRow.appendChild(th);
+            }
+            
+            // Render schedule rows
+            for (let period = 1; period <= PERIODS; period++) {
+                const row = document.createElement('tr');
+                
+                // Period label
+                const periodCell = document.createElement('td');
+                periodCell.textContent = `第 ${period} 節`;
+                periodCell.className = 'period-label';
+                row.appendChild(periodCell);
+                
+                // Day cells
+                for (let day = 0; day < 6; day++) {
+                    const cell = document.createElement('td');
+                    const weekIdx = currentWeek - 1;
+                    const periodIdx = period - 1;
+                    const cellValue = scheduleData[currentRoom][weekIdx][periodIdx][day];
+                    
+                    if (isAdmin) {
+                        // Admin view - editable
+                        const select = document.createElement('select');
+                        select.className = 'cell-select';
+                        select.dataset.day = day;
+                        select.dataset.period = periodIdx;
+                        
+                        // Add empty option (available)
+                        const emptyOption = document.createElement('option');
+                        emptyOption.value = '';
+                        emptyOption.textContent = '可借用';
+                        select.appendChild(emptyOption);
+                        
+                        // Add users
+                        for (const user of USERS) {
+                            const option = document.createElement('option');
+                            option.value = user;
+                            option.textContent = user;
+                            if (cellValue === user) {
+                                option.selected = true;
+                            }
+                            select.appendChild(option);
+                        }
+                        
+                        // Add unavailable options
+                        const unavailableOption = document.createElement('option');
+                        unavailableOption.value = '不可借用';
+                        unavailableOption.textContent = '不可借用';
+                        if (cellValue === '不可借用') {
+                            unavailableOption.selected = true;
+                        }
+                        select.appendChild(unavailableOption);
+                        
+                        const alwaysUnavailableOption = document.createElement('option');
+                        alwaysUnavailableOption.value = '每週不可借用';
+                        alwaysUnavailableOption.textContent = '每週不可借用';
+                        if (cellValue === '每週不可借用') {
+                            alwaysUnavailableOption.selected = true;
+                        }
+                        select.appendChild(alwaysUnavailableOption);
+                        
+                        // Handle change
+                        select.addEventListener('change', function() {
+                            const selectedValue = this.value;
+                            const day = parseInt(this.dataset.day);
+                            const period = parseInt(this.dataset.period);
+                            
+                            if (selectedValue === '每週不可借用') {
+                                // Mark as unavailable in all weeks
+                                for (let w = 0; w < 52; w++) {
+                                    scheduleData[currentRoom][w][period][day] = '每週不可借用';
+                                }
+                            } else {
+                                scheduleData[currentRoom][weekIdx][period][day] = selectedValue;
+                            }
+                            
+                            saveData();
+                        });
+                        
+                        cell.appendChild(select);
+                    } else {
+                        // User view - display only
+                        if (cellValue === '不可借用' || cellValue === '每週不可借用') {
+                            cell.textContent = '不可借用';
+                            cell.className = cellValue === '每週不可借用' ? 'always-unavailable' : 'unavailable';
+                        } else if (cellValue) {
+                            cell.textContent = cellValue;
+                        } else {
+                            cell.textContent = '可借用';
+                        }
+                    }
+                    
+                    row.appendChild(cell);
+                }
+                
+                scheduleBody.appendChild(row);
+            }
+        }
+        
+        function saveData() {
+            try {
+                localStorage.setItem('scheduleData', JSON.stringify(scheduleData));
+            } catch (e) {
+                console.error('LocalStorage error:', e);
+            }
+        }
+        
+        function exportData() {
+            const dataStr = JSON.stringify(scheduleData);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `營北國中載具借用系統資料_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (importedData && importedData.ipad && importedData.chromebook) {
+                        scheduleData = importedData;
+                        saveData();
+                        renderSchedule();
+                        alert('資料匯入成功');
+                    } else {
+                        alert('資料格式不正確');
+                    }
+                } catch (error) {
+                    alert('無法解析匯入的資料');
+                    console.error(error);
+                }
+            };
+            
+            reader.readAsText(file);
+            event.target.value = ''; // Reset file input
+        }
+        
+        // Initialize the app when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
