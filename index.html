@@ -1017,7 +1017,11 @@ function addSyncButton() {
             syncStatus.style.color = '#ea4335';
         }
     });
+        // 將按鈕插入到控制區
+    const controls = document.querySelector('.controls');
+    controls.appendChild(syncBtn);
     
+    return { syncBtn, syncStatus };
 
 }
 
