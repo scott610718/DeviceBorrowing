@@ -1018,12 +1018,9 @@ function addSyncButton() {
         }
     });
     
-    // 將按鈕插入到控制區
-    const controls = document.querySelector('.controls');
-    controls.appendChild(syncBtn);
-    
-    return { syncBtn, syncStatus };
+
 }
+
         
 // Update the loadOrInitializeData function to use the new decoder
 async function loadOrInitializeData() {
@@ -1111,6 +1108,21 @@ async function loadOrInitializeData() {
     }
 }
 
+// 添加同步狀態顯示
+function addSyncStatus() {
+    // 創建一個同步狀態元素
+    const syncStatus = document.createElement('div');
+    syncStatus.id = 'sync-status';
+    syncStatus.style.marginLeft = '10px';
+    syncStatus.style.color = '#34a853';
+    syncStatus.textContent = '✓ 已同步';
+    
+    // 將狀態元素添加到控制區域
+    const controls = document.querySelector('.controls');
+    controls.appendChild(syncStatus);
+    
+    return syncStatus;
+}
 
         
 // 重啟應用程序的函數
