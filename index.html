@@ -12,7 +12,7 @@
             --secondary: #4285f4;
             --text: #202124;
             --background: #ffffff;
-            --danger: #ea4335;
+            --danger: #ea7d35;
             --warning: #fbbc04;
             --success: #34a853;
             --gray: #dadce0;
@@ -173,6 +173,11 @@
         
         .unavailable {
             background-color: var(--danger);
+            color: white;
+        }
+
+        .unavailableB {
+            background-color: var(--success);
             color: white;
         }
         
@@ -692,6 +697,7 @@ loginForm.addEventListener('submit', (e) => {
                         cell.className = 'permanently-unavailable';
                     } else if (cellData.borrower) {
                         cell.textContent = cellData.borrower;
+                        cell.className = 'unavailableB';
                     } else {
                         cell.textContent = '可借用';
                     }
