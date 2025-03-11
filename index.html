@@ -435,8 +435,7 @@
         // Current cell being edited
         let currentCell = null;
         
-        // Initialize the application
-// 修改初始化函數
+// 修改 init 函數，確保只加入一次同步按鈕
 function init() {
     // 設置週次下拉選單
     for (let i = 1; i <= 52; i++) {
@@ -459,8 +458,8 @@ function init() {
     // 先設置事件監聽器
     setupEventListeners();
     
-    // 添加同步按鈕和狀態
-    const { syncBtn, syncStatus } = addSyncButton();
+    // 添加同步按鈕和狀態（僅一次）
+    const { syncStatus } = addSyncButton();
     
     // 加載數據
     loadOrInitializeData().then(() => {
@@ -478,11 +477,9 @@ function init() {
         syncStatus.style.color = '#ea4335';
     });
 }
-// 修改 init 函數，加入同步按鈕
-document.addEventListener('DOMContentLoaded', () => {
-    init();
-    addSyncButton();
-});
+
+// 移除 DOMContentLoaded 多餘的初始化
+document.addEventListener('DOMContentLoaded', init);
         
         // Initialize empty schedule data
         function initializeScheduleData() {
@@ -800,19 +797,14 @@ loginForm.addEventListener('submit', (e) => {
             event.target.value = ''; // Reset the file input
         }
         
-// Fixed saveScheduleData function with proper Unicode handling
+// 修改 saveScheduleData 函數，完全依賴 GitHub API
 async function saveScheduleData() {
-    // Save data to localStorage (as backup)
-    localStorage.setItem('schedule-data', JSON.stringify(scheduleData));
-    
+    // 管理者模式：儲存到 GitHub
     if (!isAdmin) return;
     
     if (githubCredentials.token && githubCredentials.username && githubCredentials.repo) {
         try {
-            // Save GitHub credentials to localStorage for future use
-            localStorage.setItem('github-credentials', JSON.stringify(githubCredentials));
-            
-            // Always get the latest file state first
+            // 總是先取得最新的檔案狀態
             const checkResponse = await fetch(`https://api.github.com/repos/${githubCredentials.username}/${githubCredentials.repo}/contents/schedule-data.json`, {
                 headers: {
                     'Authorization': `token ${githubCredentials.token}`,
@@ -823,44 +815,43 @@ async function saveScheduleData() {
             let sha = null;
             let currentData = {};
             
-            // If file exists, get its SHA and content
+            // 如果檔案存在，獲取其 SHA 和內容
             if (checkResponse.ok) {
                 const fileData = await checkResponse.json();
                 sha = fileData.sha;
                 
-                // Handle potential content conflicts
+                // 處理潛在的內容衝突
                 try {
-                    // Decode Base64 content properly with UTF-8 support
+                    // 正確解碼 Base64 內容
                     const decodedContent = decodeBase64UTF8(fileData.content);
                     currentData = JSON.parse(decodedContent);
                     
-                    // Merge remote and local data (prioritize local, but consider other users' changes)
+                    // 合併遠端和本地數據
                     mergeScheduleData(currentData, scheduleData);
                 } catch (parseError) {
                     console.error('Error parsing current GitHub data:', parseError);
-                    // If remote data can't be parsed, use local data
                 }
             }
             
-            // Convert data to JSON string
+            // 轉換數據為 JSON 字串
             const jsonData = JSON.stringify(scheduleData);
             
-            // Encode JSON string to Base64 with UTF-8 support
+            // 使用 UTF-8 支持編碼 JSON 字串為 Base64
             const base64Data = encodeBase64UTF8(jsonData);
             
-            // Prepare request content
+            // 準備請求內容
             const body = {
                 message: 'Update borrowing system data',
                 content: base64Data,
                 branch: 'main'
             };
             
-            // If file already exists, add sha
+            // 如果檔案已存在，添加 sha
             if (sha) {
                 body.sha = sha;
             }
             
-            // Send request
+            // 發送請求
             const response = await fetch(`https://api.github.com/repos/${githubCredentials.username}/${githubCredentials.repo}/contents/schedule-data.json`, {
                 method: 'PUT',
                 headers: {
@@ -874,12 +865,12 @@ async function saveScheduleData() {
             if (!response.ok) {
                 const errorText = await response.text();
                 
-                // Handle 409 conflict error (file has been modified)
+                // 處理 409 衝突錯誤（檔案已被修改）
                 if (response.status === 409) {
-                    // Re-sync and try again
+                    // 重新同步並再試一次
                     await loadOrInitializeData();
                     console.log('Handling 409 conflict, retrying...');
-                    setTimeout(saveScheduleData, 1000); // Retry after 1 second
+                    setTimeout(saveScheduleData, 1000); // 1秒後重試
                     return;
                 }
                 
@@ -891,6 +882,8 @@ async function saveScheduleData() {
             console.error('Error saving to GitHub:', error);
             alert('儲存到 GitHub 失敗: ' + error.message);
         }
+    } else {
+        alert('未設定 GitHub 憑證，無法儲存資料');
     }
 }
 
@@ -965,7 +958,7 @@ function mergeScheduleData(remoteData, localData) {
     });
 }
 
-// 修改 setupPeriodicSync 函數，增加同步狀態顯示
+// 修改 setupPeriodicSync 函數，簡化邏輯
 function setupPeriodicSync(syncStatus) {
     if (!syncStatus) {
         syncStatus = document.getElementById('sync-status');
@@ -973,33 +966,48 @@ function setupPeriodicSync(syncStatus) {
     
     // 每隔 5 分鐘檢查一次更新
     setInterval(async () => {
-        if (!isAdmin) {  // 只有非管理員需要定期同步
-            syncStatus.textContent = '⟳ 同步中...';
-            syncStatus.style.color = '#fbbc04';
+        syncStatus.textContent = '⟳ 同步中...';
+        syncStatus.style.color = '#fbbc04';
+        
+        try {
+            await loadOrInitializeData();
+            renderSchedule();
             
-            try {
-                await loadOrInitializeData();
-                renderSchedule();
-                
-                syncStatus.textContent = '✓ 已同步';
-                syncStatus.style.color = '#34a853';
-            } catch (error) {
-                console.error('自動同步失敗:', error);
-                syncStatus.textContent = '✗ 同步失敗';
-                syncStatus.style.color = '#ea4335';
-            }
+            syncStatus.textContent = '✓ 已同步';
+            syncStatus.style.color = '#34a853';
+        } catch (error) {
+            console.error('自動同步失敗:', error);
+            syncStatus.textContent = '✗ 同步失敗';
+            syncStatus.style.color = '#ea4335';
         }
     }, 5 * 60 * 1000);  // 5分鐘
 }
 
-// 修改同步按鈕函數
+// 修改 addSyncButton 函數
 function addSyncButton() {
+    // 檢查是否已經存在按鈕，避免重複添加
+    if (document.getElementById('sync-btn')) {
+        return {
+            syncBtn: document.getElementById('sync-btn'),
+            syncStatus: document.getElementById('sync-status')
+        };
+    }
+    
     const syncBtn = document.createElement('button');
     syncBtn.id = 'sync-btn';
     syncBtn.textContent = '同步雲端資料';
     
     // 創建同步狀態顯示
-    const syncStatus = addSyncStatus();
+    const syncStatus = document.createElement('div');
+    syncStatus.id = 'sync-status';
+    syncStatus.style.marginLeft = '10px';
+    syncStatus.style.color = '#34a853';
+    syncStatus.textContent = '✓ 已同步';
+    
+    // 將按鈕和狀態插入到控制區
+    const controls = document.querySelector('.controls');
+    controls.appendChild(syncBtn);
+    controls.appendChild(syncStatus);
     
     syncBtn.addEventListener('click', async () => {
         syncStatus.textContent = '⟳ 同步中...';
@@ -1017,24 +1025,19 @@ function addSyncButton() {
             syncStatus.style.color = '#ea4335';
         }
     });
-        // 將按鈕插入到控制區
-    const controls = document.querySelector('.controls');
-    controls.appendChild(syncBtn);
     
     return { syncBtn, syncStatus };
-
 }
-
         
-// Update the loadOrInitializeData function to use the new decoder
+// 修改 loadOrInitializeData 函數，優先使用 GitHub 資料
 async function loadOrInitializeData() {
-    // Try to load GitHub credentials from local storage
+    // 嘗試從 localStorage 載入 GitHub 憑證
     try {
         const storedCredentials = localStorage.getItem('github-credentials');
         if (storedCredentials) {
             githubCredentials = JSON.parse(storedCredentials);
             
-            // If GitHub credentials exist, fill in the form
+            // 如果有 GitHub 憑證，填入表單
             if (githubCredentials.token && githubCredentials.username && githubCredentials.repo) {
                 document.getElementById('github-token').value = githubCredentials.token;
                 document.getElementById('github-username').value = githubCredentials.username;
@@ -1045,8 +1048,7 @@ async function loadOrInitializeData() {
         console.error('Error loading GitHub credentials:', error);
     }
     
-    // If GitHub credentials exist, try to load data from GitHub
-    let loadedFromGitHub = false;
+    // 從 GitHub 加載數據
     if (githubCredentials.token && githubCredentials.username && githubCredentials.repo) {
         try {
             const response = await fetch(`https://api.github.com/repos/${githubCredentials.username}/${githubCredentials.repo}/contents/schedule-data.json`, {
@@ -1054,30 +1056,23 @@ async function loadOrInitializeData() {
                     'Authorization': `token ${githubCredentials.token}`,
                     'Accept': 'application/vnd.github.v3+json'
                 },
-                cache: 'no-store' // Ensure no cache is used
+                cache: 'no-store' // 確保不使用快取
             });
             
             if (response.ok) {
                 const fileData = await response.json();
-                // Decode Base64 content with UTF-8 support
+                // 解碼 Base64 內容
                 const decodedContent = decodeBase64UTF8(fileData.content);
                 
                 try {
-                    // Parse JSON data
+                    // 解析 JSON 資料
                     const githubData = JSON.parse(decodedContent);
                     
-                    // Check if data structure is valid
+                    // 檢查資料結構是否有效
                     if (githubData.ipad && githubData.chromebook) {
-                        if (isAdmin) {
-                            // Admin mode: merge local and remote data
-                            mergeScheduleData(githubData, scheduleData);
-                        } else {
-                            // Regular user mode: directly use cloud data
-                            scheduleData = githubData;
-                        }
-                        
+                        scheduleData = githubData;
                         console.log('Data successfully loaded from GitHub');
-                        loadedFromGitHub = true;
+                        return; // 成功載入資料，結束函數
                     } else {
                         console.error('GitHub data structure is invalid');
                     }
@@ -1085,7 +1080,6 @@ async function loadOrInitializeData() {
                     console.error('Error parsing GitHub data:', parseError);
                 }
             } else if (response.status !== 404) {
-                // If response is not 404 (file doesn't exist), show error
                 console.error('GitHub API error:', response.status);
             }
         } catch (error) {
@@ -1093,23 +1087,9 @@ async function loadOrInitializeData() {
         }
     }
     
-    // If can't load from GitHub, try loading from localStorage
-    if (!loadedFromGitHub) {
-        const storedData = localStorage.getItem('schedule-data');
-        if (storedData) {
-            try {
-                scheduleData = JSON.parse(storedData);
-                console.log('Data loaded from localStorage');
-                return;
-            } catch (error) {
-                console.error('Error parsing local data:', error);
-            }
-        }
-        
-        // If can't load from GitHub or localStorage, initialize empty data
-        console.log('No data found, initializing empty data');
-        initializeScheduleData();
-    }
+    // 如果無法從 GitHub 載入，則初始化空資料
+    console.log('No data found or unable to access GitHub, initializing empty data');
+    initializeScheduleData();
 }
 
 // 添加同步狀態顯示
