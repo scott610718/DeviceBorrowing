@@ -1072,15 +1072,15 @@ function addSyncButton() {
     return { syncBtn, syncStatus };
 }
         
-// 修改 loadOrInitializeData 函數，移除認證要求
+// 修改 loadOrInitializeData 函数，避免覆盖现有数据
 async function loadOrInitializeData() {
-    // 嘗試從 localStorage 載入 GitHub 憑證
+    // 尝试从 localStorage 载入 GitHub 凭证
     try {
         const storedCredentials = localStorage.getItem('github-credentials');
         if (storedCredentials) {
             githubCredentials = JSON.parse(storedCredentials);
             
-            // 如果有 GitHub 憑證，填入表單
+            // 如果有 GitHub 凭证，填入表单
             if (githubCredentials.token && githubCredentials.username && githubCredentials.repo) {
                 document.getElementById('github-token').value = githubCredentials.token;
                 document.getElementById('github-username').value = githubCredentials.username;
@@ -1091,30 +1091,33 @@ async function loadOrInitializeData() {
         console.error('Error loading GitHub credentials:', error);
     }
     
-    // 嘗試使用公共方式獲取 GitHub 數據
+    // 检查是否已有数据
+    const hasExistingData = scheduleData && scheduleData.ipad && scheduleData.chromebook;
+    
+    // 尝试使用公共方式获取 GitHub 数据
     try {
-        // 這裡需要設置為您的實際倉庫資訊，不需要身份驗證
-        const repoOwner = 'scott610718'; // 替換為實際的 GitHub 用戶名
-        const repoName = 'DeviceBorrowing'; // 替換為實際的倉庫名
+        // 这里需要设置为您的实际仓库信息，不需要身份验证
+        const repoOwner = 'scott610718'; // 替换为实际的 GitHub 用户名
+        const repoName = 'DeviceBorrowing'; // 替换为实际的仓库名
         
         const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/schedule-data.json`, {
-            cache: 'no-store' // 確保不使用快取
+            cache: 'no-store' // 确保不使用缓存
         });
         
         if (response.ok) {
             const fileData = await response.json();
-            // 解碼 Base64 內容
+            // 解码 Base64 内容
             const decodedContent = decodeBase64UTF8(fileData.content);
             
             try {
-                // 解析 JSON 資料
+                // 解析 JSON 数据
                 const githubData = JSON.parse(decodedContent);
                 
-                // 檢查資料結構是否有效
+                // 检查数据结构是否有效
                 if (githubData.ipad && githubData.chromebook) {
                     scheduleData = githubData;
                     console.log('Data successfully loaded from GitHub');
-                    return; // 成功載入資料，結束函數
+                    return; // 成功载入数据，结束函数
                 } else {
                     console.error('GitHub data structure is invalid');
                 }
@@ -1128,9 +1131,13 @@ async function loadOrInitializeData() {
         console.error('Error loading from GitHub:', error);
     }
     
-    // 如果無法從 GitHub 載入，則初始化空資料
-    console.log('No data found or unable to access GitHub, initializing empty data');
-    initializeScheduleData();
+    // 关键修改：如果无法从 GitHub 载入，并且没有现有数据，才初始化空数据
+    if (!hasExistingData) {
+        console.log('No data found or unable to access GitHub, initializing empty data');
+        initializeScheduleData();
+    } else {
+        console.log('Unable to sync with GitHub, keeping existing data');
+    }
 }
 
 // 添加同步狀態顯示
