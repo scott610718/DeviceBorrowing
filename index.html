@@ -435,7 +435,6 @@
         // Current cell being edited
         let currentCell = null;
         
-// 修改 init 函數，確保只加入一次同步按鈕
 function init() {
     // 設置週次下拉選單
     for (let i = 1; i <= 52; i++) {
@@ -461,12 +460,12 @@ function init() {
     // 添加同步按鈕和狀態（僅一次）
     const { syncStatus } = addSyncButton();
     
-    // 加載數據
+    // 所有用戶都會加載數據
     loadOrInitializeData().then(() => {
         // 渲染時間表
         renderSchedule();
         
-        // 設置定期同步
+        // 設置定期同步（所有用戶都會同步）
         setupPeriodicSync(syncStatus);
         
         syncStatus.textContent = '✓ 已同步';
@@ -983,7 +982,6 @@ function setupPeriodicSync(syncStatus) {
     }, 5 * 60 * 1000);  // 5分鐘
 }
 
-// 修改 addSyncButton 函數
 function addSyncButton() {
     // 檢查是否已經存在按鈕，避免重複添加
     if (document.getElementById('sync-btn')) {
@@ -1014,6 +1012,7 @@ function addSyncButton() {
         syncStatus.style.color = '#fbbc04';
         
         try {
+            // 所有用戶都可以同步數據
             await loadOrInitializeData();
             renderSchedule();
             
@@ -1029,7 +1028,7 @@ function addSyncButton() {
     return { syncBtn, syncStatus };
 }
         
-// 修改 loadOrInitializeData 函數，優先使用 GitHub 資料
+// 修改 loadOrInitializeData 函數，移除認證要求
 async function loadOrInitializeData() {
     // 嘗試從 localStorage 載入 GitHub 憑證
     try {
@@ -1048,43 +1047,41 @@ async function loadOrInitializeData() {
         console.error('Error loading GitHub credentials:', error);
     }
     
-    // 從 GitHub 加載數據
-    if (githubCredentials.token && githubCredentials.username && githubCredentials.repo) {
-        try {
-            const response = await fetch(`https://api.github.com/repos/${githubCredentials.username}/${githubCredentials.repo}/contents/schedule-data.json`, {
-                headers: {
-                    'Authorization': `token ${githubCredentials.token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                cache: 'no-store' // 確保不使用快取
-            });
+    // 嘗試使用公共方式獲取 GitHub 數據
+    try {
+        // 這裡需要設置為您的實際倉庫資訊，不需要身份驗證
+        const repoOwner = 'scott610718'; // 替換為實際的 GitHub 用戶名
+        const repoName = 'DeviceBorrowing'; // 替換為實際的倉庫名
+        
+        const response = await fetch(`https://api.github.com/repos/${repoOwner}/${repoName}/contents/schedule-data.json`, {
+            cache: 'no-store' // 確保不使用快取
+        });
+        
+        if (response.ok) {
+            const fileData = await response.json();
+            // 解碼 Base64 內容
+            const decodedContent = decodeBase64UTF8(fileData.content);
             
-            if (response.ok) {
-                const fileData = await response.json();
-                // 解碼 Base64 內容
-                const decodedContent = decodeBase64UTF8(fileData.content);
+            try {
+                // 解析 JSON 資料
+                const githubData = JSON.parse(decodedContent);
                 
-                try {
-                    // 解析 JSON 資料
-                    const githubData = JSON.parse(decodedContent);
-                    
-                    // 檢查資料結構是否有效
-                    if (githubData.ipad && githubData.chromebook) {
-                        scheduleData = githubData;
-                        console.log('Data successfully loaded from GitHub');
-                        return; // 成功載入資料，結束函數
-                    } else {
-                        console.error('GitHub data structure is invalid');
-                    }
-                } catch (parseError) {
-                    console.error('Error parsing GitHub data:', parseError);
+                // 檢查資料結構是否有效
+                if (githubData.ipad && githubData.chromebook) {
+                    scheduleData = githubData;
+                    console.log('Data successfully loaded from GitHub');
+                    return; // 成功載入資料，結束函數
+                } else {
+                    console.error('GitHub data structure is invalid');
                 }
-            } else if (response.status !== 404) {
-                console.error('GitHub API error:', response.status);
+            } catch (parseError) {
+                console.error('Error parsing GitHub data:', parseError);
             }
-        } catch (error) {
-            console.error('Error loading from GitHub:', error);
+        } else if (response.status !== 404) {
+            console.error('GitHub API error:', response.status);
         }
+    } catch (error) {
+        console.error('Error loading from GitHub:', error);
     }
     
     // 如果無法從 GitHub 載入，則初始化空資料
