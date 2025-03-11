@@ -16,6 +16,8 @@
             --warning: #fbbc04;
             --success: #34a853;
             --gray: #dadce0;
+            --borrowed: #b3d9ff; /* 新增：粉藍色背景 */
+            --unavailable: #fff0b3; /* 新增：粉黃色背景 */
         }
         
         * {
@@ -172,8 +174,8 @@
         }
         
         .unavailable {
-            background-color: var(--danger);
-            color: white;
+            background-color: var(--unavailable); /* 由紅色改為粉黃色 */
+            color: black; /* 修改文字顏色以適應淺色背景 */
         }
         
         .permanently-unavailable {
@@ -726,6 +728,7 @@ loginForm.addEventListener('submit', (e) => {
                         cell.className = 'permanently-unavailable';
                     } else if (cellData.borrower) {
                         cell.textContent = cellData.borrower;
+                        cell.className = 'borrowed'; // 新增：借用人有名字時的類名
                     } else {
                         cell.textContent = '可借用';
                     }
@@ -759,7 +762,10 @@ loginForm.addEventListener('submit', (e) => {
             } else {
                 borrowerContainer.classList.add('hidden');
             }
-            
+            // 確保所有狀態選項都可選，包括從"不可借用"轉為"可借用"
+            const statusOptions = borrowStatus.options;
+            for (let i = 0; i < statusOptions.length; i++) {
+            statusOptions[i].disabled = false;            
             // Show the modal
             editModal.style.display = 'block';
         }
