@@ -420,7 +420,7 @@
                         <option value="鍾菁菁">鍾菁菁</option>
                         <option value="吳政翰">吳政翰</option>
                         <option value="許淑智">許淑智</option>
-                        option value="曾怡儒">曾怡儒</option>
+                        option value="唐瑄">唐瑄</option>
                         <option value="蘇琮筆">蘇琮筆</option>
                     </select>
                 </div>
@@ -432,7 +432,7 @@
     <script>
         // Constants
         const MONTHS_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        const BORROWERS = ["李靜汝", "田慧晶", "江佳容", "林怡彣", "李立德", "李雯琪", "張心怡", "洪錦男", "許志豪", "林明輝", "林淑楨", "林秀貞", "黃綉媛", "王耀賢", "莊雅如", "陳怡妏", "陳育德", "蕭慧純", "李蕎至", "蔡呈熙", "李宜芳", "鄧伊芳", "曾柏蓉", "魏俊益", "崔愉雯", "徐錫穎", "張茱貽", "張智鈞", "洪振民", "林佳蓉", "張瀞云", "陳立崗", "徐嘉禧", "楊海萍", "鍾菁菁", "吳政翰", "許淑智", "曾怡儒", "蘇琮筆"];
+        const BORROWERS = ["李靜汝", "田慧晶", "江佳容", "林怡彣", "李立德", "李雯琪", "張心怡", "洪錦男", "許志豪", "林明輝", "林淑楨", "林秀貞", "黃綉媛", "王耀賢", "莊雅如", "陳怡妏", "陳育德", "蕭慧純", "李蕎至", "蔡呈熙", "李宜芳", "鄧伊芳", "曾柏蓉", "魏俊益", "崔愉雯", "徐錫穎", "張茱貽", "張智鈞", "洪振民", "林佳蓉", "張瀞云", "陳立崗", "徐嘉禧", "楊海萍", "鍾菁菁", "吳政翰", "許淑智", "唐瑄", "蘇琮筆"];
         const DEFAULT_ADMIN = { username: "114", password: "114" };
         const CURRENT_YEAR = 114; // 民國114年
         
@@ -494,7 +494,7 @@ function init() {
     const today = new Date();
     const startOfYear = new Date(today.getFullYear(), 0, 1);
     const days = Math.floor((today - startOfYear) / (24 * 60 * 60 * 1000));
-    currentWeek = Math.ceil(days / 7);
+    currentWeek = Math.ceil((days / 7)-35);
     weekSelect.value = currentWeek;
     
     // 先設置事件監聽器
